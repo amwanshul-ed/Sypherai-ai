@@ -13,13 +13,18 @@ import {
   RiPulseLine,
   RiWifiLine,
   RiServerLine,
-  RiEarthLine
+  RiEarthLine,
+  RiSendPlane2Fill,
+  RiImageAddLine,
+  RiAttachment2,
+  RiCloseLine
 } from 'react-icons/ri'
 import { FaMemory } from 'react-icons/fa6'
 import { GiTinker } from 'react-icons/gi'
 import { HiComputerDesktop } from 'react-icons/hi2'
 import * as faceapi from 'face-api.js'
 import { VisionMode } from '@renderer/IndexRoot'
+import { irisService } from '@renderer/services/Iris-voice-ai'
 
 interface IrisProps {
   isSystemActive: boolean
@@ -63,10 +68,17 @@ export default function DashboardView({
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const faceScanInterval = useRef<NodeJS.Timeout | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const dragDepthRef = useRef(0)
 
   const [modelsLoaded, setModelsLoaded] = useState(false)
 
   const [networkStats, setNetworkStats] = useState({ ping: 24, rate: 1.2, tx: 40, rx: 60 })
+
+  const [textInput, setTextInput] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
+  const [dropFlash, setDropFlash] = useState<string | null>(null)
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null)
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -223,6 +235,147 @@ export default function DashboardView({
     startVision(nextMode)
   }
 
+  const sendTypedMessage = useCallback(() => {
+    const text = textInput.trim()
+    if (!text || !isSystemActive) return
+    const ok = irisService.sendTextMessage(text)
+    if (ok) setTextInput('')
+  }, [textInput, isSystemActive])
+
+  const handleTextKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendTypedMessage()
+    }
+  }
+
+  const buildThumbnail = (dataUrl: string): Promise<string> =>
+    new Promise((resolve) => {
+      try {
+        const img = new Image()
+        img.onload = () => {
+          try {
+            const max = 256
+            let w = img.naturalWidth || img.width
+            let h = img.naturalHeight || img.height
+            if (!w || !h) return resolve(dataUrl)
+            if (w > h) {
+              h = Math.round((h * max) / w)
+              w = max
+            } else {
+              w = Math.round((w * max) / h)
+              h = max
+            }
+            const canvas = document.createElement('canvas')
+            canvas.width = w
+            canvas.height = h
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return resolve(dataUrl)
+            ctx.drawImage(img, 0, 0, w, h)
+            resolve(canvas.toDataURL('image/jpeg', 0.78))
+          } catch {
+            resolve(dataUrl)
+          }
+        }
+        img.onerror = () => resolve(dataUrl)
+        img.src = dataUrl
+      } catch {
+        resolve(dataUrl)
+      }
+    })
+
+  const dispatchImageFile = useCallback(
+    (file: File | null | undefined) => {
+      if (!file || !isSystemActive) return
+      if (!file.type.startsWith('image/')) return
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const dataUrl = reader.result as string
+        const base64 = dataUrl.split(',')[1]
+        if (!base64) return
+        const thumbnail = await buildThumbnail(dataUrl)
+        const ok = irisService.sendImageWithContext(
+          base64,
+          'I just dropped an image into the dashboard. Describe what you see in English and use it as context for the next request.',
+          file.type || 'image/jpeg',
+          file.name,
+          thumbnail
+        )
+        if (ok) {
+          setDropFlash(file.name)
+          setTimeout(() => setDropFlash(null), 1800)
+        }
+      }
+      reader.readAsDataURL(file)
+    },
+    [isSystemActive]
+  )
+
+  const renderMessageBody = (rawText: string) => {
+    if (!rawText) return null
+    const match = rawText.match(/^\[IMG:(att_[a-z0-9_]+)\]\s*([\s\S]*)$/i)
+    if (!match) return rawText
+    const attId = match[1]
+    const rest = match[2]
+    let dataUrl: string | null = null
+    try {
+      dataUrl = sessionStorage.getItem(`sypher_att_${attId}`)
+    } catch {
+      dataUrl = null
+    }
+    return (
+      <div className="flex flex-col gap-2">
+        {dataUrl ? (
+          <button
+            type="button"
+            onClick={() => setZoomedImage(dataUrl)}
+            className="group relative overflow-hidden rounded-lg border border-emerald-500/30 bg-black/40 cursor-zoom-in transition-all hover:border-emerald-400/60"
+          >
+            <img
+              src={dataUrl}
+              alt="Attached preview"
+              className="max-h-44 w-full object-cover"
+            />
+            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-emerald-300 text-[8px] font-mono tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+              ZOOM
+            </span>
+          </button>
+        ) : null}
+        {rest && <span className="whitespace-pre-wrap break-words">{rest}</span>}
+      </div>
+    )
+  }
+
+  const onDashDragEnter = (e: React.DragEvent) => {
+    if (!isSystemActive) return
+    if (!e.dataTransfer.types?.includes('Files')) return
+    e.preventDefault()
+    dragDepthRef.current += 1
+    setIsDragging(true)
+  }
+
+  const onDashDragOver = (e: React.DragEvent) => {
+    if (!isSystemActive) return
+    if (!e.dataTransfer.types?.includes('Files')) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+
+  const onDashDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1)
+    if (dragDepthRef.current === 0) setIsDragging(false)
+  }
+
+  const onDashDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    dragDepthRef.current = 0
+    setIsDragging(false)
+    if (!isSystemActive) return
+    const file = e.dataTransfer.files?.[0]
+    dispatchImageFile(file)
+  }
+
   const systemMetrics = [
     {
       icon: <RiCpuLine />,
@@ -283,7 +436,67 @@ export default function DashboardView({
   ]
 
   return (
-    <div className="flex-1 p-4 bg-white/2 grid grid-cols-12 gap-4 h-full overflow-hidden relative animate-in fade-in zoom-in duration-300 w-full">
+    <div
+      className="flex-1 p-4 bg-white/2 grid grid-cols-12 gap-4 h-full overflow-hidden relative animate-in fade-in zoom-in duration-300 w-full"
+      onDragEnter={onDashDragEnter}
+      onDragOver={onDashDragOver}
+      onDragLeave={onDashDragLeave}
+      onDrop={onDashDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-md border-2 border-dashed border-emerald-500/60 rounded-2xl pointer-events-none animate-in fade-in duration-150">
+          <div className="flex flex-col items-center gap-3">
+            <div className="p-5 rounded-full bg-emerald-500/15 border border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.25)]">
+              <RiImageAddLine size={42} className="text-emerald-400 animate-pulse" />
+            </div>
+            <span className="text-sm font-black tracking-[0.25em] uppercase text-emerald-300">
+              Release to feed Sypher
+            </span>
+            <span className="text-[10px] font-mono tracking-widest text-zinc-400">
+              IMAGE → NEURAL CONTEXT INJECTION
+            </span>
+          </div>
+        </div>
+      )}
+
+      {dropFlash && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-[10px] font-mono tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.25)] animate-in fade-in zoom-in duration-200">
+            📎 IMAGE STREAMED → {dropFlash}
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          dispatchImageFile(f)
+          if (e.target) e.target.value = ''
+        }}
+      />
+
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-md p-8 animate-in fade-in duration-150"
+          onClick={() => setZoomedImage(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setZoomedImage(null)}
+            className="absolute top-6 right-6 p-3 rounded-full bg-white/5 border border-white/10 text-zinc-300 hover:bg-red-500/20 hover:text-red-300 transition-colors cursor-pointer"
+          >
+            <RiCloseLine size={22} />
+          </button>
+          <img
+            src={zoomedImage}
+            alt="Attached image"
+            className="max-w-[90vw] max-h-[85vh] rounded-2xl border border-white/10 shadow-[0_0_60px_rgba(16,185,129,0.15)] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       <div className="hidden lg:flex col-span-3 flex-col gap-4 h-full z-40">
         <div
           className={`${glassPanel} h-70 shrink-0 flex flex-col p-1 overflow-hidden relative group`}
@@ -532,19 +745,62 @@ export default function DashboardView({
                 </span>
               </div>
             ) : (
-              chatHistory.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-                >
+              chatHistory.map((msg, idx) => {
+                const text =
+                  msg.parts && msg.parts[0] ? msg.parts[0].text : msg.content || ''
+                return (
                   <div
-                    className={`max-w-[95%] py-2 px-3 rounded-lg text-[11px] leading-relaxed border font-mono font-semibold ${msg.role === 'user' ? 'bg-emerald-900/20 border-emerald-500/20 text-emerald-100/90 rounded-br-none' : 'bg-zinc-900/50 border-white/5 text-zinc-400 rounded-bl-none'}`}
+                    key={idx}
+                    className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                   >
-                    {msg.parts && msg.parts[0] ? msg.parts[0].text : msg.content}
+                    <div
+                      className={`max-w-[95%] py-2 px-3 rounded-lg text-[11px] leading-relaxed border font-mono font-semibold ${msg.role === 'user' ? 'bg-emerald-900/20 border-emerald-500/20 text-emerald-100/90 rounded-br-none' : 'bg-zinc-900/50 border-white/5 text-zinc-400 rounded-bl-none'}`}
+                    >
+                      {renderMessageBody(text)}
+                    </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
+          </div>
+
+          <div className="mt-3 pt-3 border-t border-white/10 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!isSystemActive}
+                title="Attach image as context"
+                className="shrink-0 p-2 rounded-lg bg-black/40 border border-white/10 text-zinc-400 hover:text-emerald-300 hover:border-emerald-500/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <RiAttachment2 size={14} />
+              </button>
+              <input
+                type="text"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={handleTextKey}
+                disabled={!isSystemActive}
+                placeholder={
+                  isSystemActive ? 'Type a command… (Enter to send)' : 'Activate Sypher to chat…'
+                }
+                className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[11px] font-mono text-emerald-100/90 placeholder:text-zinc-600 outline-none focus:border-emerald-500/40 focus:bg-black/60 transition-colors disabled:opacity-40"
+              />
+              <button
+                type="button"
+                onClick={sendTypedMessage}
+                disabled={!isSystemActive || !textInput.trim()}
+                title="Send to Sypher"
+                className="shrink-0 p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <RiSendPlane2Fill size={14} />
+              </button>
+            </div>
+            <span className="text-[8px] font-mono tracking-widest text-zinc-600 px-1">
+              {isSystemActive
+                ? 'TEXT • VOICE • DRAG IMAGE FOR CONTEXT'
+                : 'SYSTEM OFFLINE — PRESS THE GREEN ORB TO ENGAGE'}
+            </span>
           </div>
         </div>
       </div>

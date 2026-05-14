@@ -1,6 +1,8 @@
 <div align="center">
 
-![IRIS Neural OS Documentation Banner](./assets/banner.jpeg)
+![Sypher AI Neural OS Documentation Banner](./assets/banner.jpeg)
+
+# 👁️ SYPHER AI
 
 ## The Autonomous Neural OS Agent
 
@@ -21,6 +23,8 @@
 
 **A local-first neural execution system that turns intent into real OS actions.**
 
+> Voice. Text. Vision. Drag-and-drop image context. One Sphere. Zero friction.
+
 ---
 
 </div>
@@ -36,7 +40,7 @@
 - [📁 Project Structure](#-project-structure)
 - [🧠 Development Philosophy](#-development-philosophy)
 - [🤝 Contributing](#-contributing)
-- [🧩 Extending IRIS](#-extending-iris)
+- [🧩 Extending Sypher AI](#-extending-sypher-ai)
 - [🧠 Roadmap](#-roadmap)
 - [⚠️ Disclaimer](#️-disclaimer)
 - [👨‍💻 Architect](#-architect)
@@ -46,15 +50,39 @@
 
 # ⚡ Overview
 
-IRIS is not a chatbot.
+Sypher AI is not a chatbot.
 
-It is a **local-first AI Operating System layer** that executes real-world actions across your system, applications, and devices.
+It is a **local-first Agentic Operating System layer** that executes real-world actions across your system, applications, and devices — driven by a real-time WebRTC voice pipeline, multimodal vision, and a deeply integrated tool runtime.
 
-> Speak your command. IRIS executes it.
+You speak. You type. You drop an image. Sypher understands intent, picks the right native feature (Notes, Gallery, Macros, Apps, Phone…) and **executes**.
+
+> Speak. Type. Drop. Sypher executes.
+
+**Default language: English.** Sypher always replies in English unless you explicitly ask it to switch (e.g. "Sypher, switch to Hindi").
 
 ---
 
 # ✨ Core Features & System Capabilities
+
+### 💬 Dashboard Multi-Modal Chat
+
+- 🎙️ **Voice-First Pipeline:** Real-time, low-latency Gemini Live WebRTC audio streaming with VAD-aware barge-in.
+- ⌨️ **Text Input:** Type a command directly into the dashboard transcript and hit Enter — same brain as voice.
+- 🖼️ **Drag-and-Drop Image Context:** Drop any image onto the dashboard and Sypher ingests it as live multimodal context.
+- 📎 **Attach Button:** One-click image picker for context injection from anywhere on disk.
+- 🌐 **English-First Transcription:** Speech and audio output are forced to English by default; switching languages is an explicit verbal override.
+
+### 🧰 Sypher Native Views (Auto-Routed by the Agent)
+
+The top bar exposes seven first-class views — Sypher itself routes user requests to the right one:
+
+- 🟩 **DASHBOARD:** The Sphere, voice/text/image input, system telemetry, transcript.
+- ⚙️ **MACROS:** Visual workflow editor for chained automations. Sypher can both **execute** and **author** macros via natural language.
+- 📦 **APPS:** Installed apps overview — "open / close \<app\>" routes here.
+- 📝 **NOTES:** Markdown notebook. "Take notes" / "jot this down" routes here.
+- 🖼️ **GALLERY:** AI-generated image vault. "Generate an image" lands here.
+- 📱 **PHONE:** Connected Android telekinesis (notifications, hardware toggles, app control).
+- 🔧 **SETTINGS:** Encrypted vault for API keys, voice profile, personality matrix and biometrics.
 
 ### 📂 System & File Management
 
@@ -83,6 +111,7 @@ It is a **local-first AI Operating System layer** that executes real-world actio
 - 🏗️ **Build File:** Writing code directly to disk.
 - 🤖 **Execute Sequence:** JSON-based macro automation runs.
 - ▶️ **Execute Macro:** Named workflow sequence triggering.
+- 🪄 **Forge Macro (Generate Macro):** Sypher converts a natural-language description into a saved, runnable macro graph in the MACROS tab.
 - 🕳️ **Deploy Wormhole:** Expose localhost to public internet.
 - 🛑 **Close Wormhole:** Terminate public localhost tunnels.
 
@@ -156,15 +185,23 @@ It is a **local-first AI Operating System layer** that executes real-world actio
 
 # 🏗️ Architecture
 
-### Frontend
+### Frontend (Renderer)
 
-- React + Tailwind + Framer Motion
-- Handles UI, commands, voice
+- React 19 + Tailwind v4 + Framer Motion + GSAP
+- 3D Sphere via Three.js / React Three Fiber
+- Handles UI, transcripts, voice, text input, drag-drop image ingest
 
-### Backend
+### Backend (Main)
 
-- Electron (Node.js)
-- Full system access (files, automation, sockets)
+- Electron + Node.js
+- Full system access: files, native automation (Nut.js), windows, ADB, Puppeteer-stealth web crawl
+- Vector storage via LanceDB; biometric vault via face-api.js
+
+### Real-Time Brain
+
+- Google Gemini Live (`BidiGenerateContent`) over WebSocket for voice + vision
+- Audio worklet streams 16 kHz PCM in ~250 ms buffers
+- `clientContent` channel used for typed text and dropped images (multimodal turns)
 
 ### IPC Bridge
 
@@ -176,7 +213,7 @@ window.electron.ipcRenderer.invoke('tool-name', payload)
 
 # 💻 Tech Stack
 
-IRIS is forged using a high-performance stack combining web technologies with deep native OS access and state-of-the-art AI models.
+Sypher AI is forged using a high-performance stack combining web technologies with deep native OS access and state-of-the-art AI models.
 
 ### 🖥️ Core Desktop & UI Framework
 
@@ -254,21 +291,22 @@ npm run dev
 
 ---
 
-### 5. Initialize Vault
+### 4. Initialize Vault
 
-- Open app
+- Open Sypher AI
 - Go to Command Center (Settings)
 - Add API keys securely
+- Optional: register your face for biometric unlock
 
 ---
 
 ## 🔑 System Keys & Configuration
 
-IRIS operates locally, but requires specific API keys to bridge the gap to large language models and search engines. **Your keys are encrypted and stored locally on your machine. They are never sent to our servers.**
+Sypher AI operates locally, but requires specific API keys to bridge the gap to large language models and search engines. **Your keys are encrypted and stored locally on your machine. They are never sent to our servers.**
 
 ### How to Configure
 
-- **Desktop App Users:** Open IRIS, navigate to the **Settings Tab (Command Center) > API Keys**, and paste your keys directly into the vault.
+- **Desktop App Users:** Open Sypher AI, navigate to the **Settings Tab (Command Center) > API Keys**, and paste your keys directly into the vault.
 - **Developers (Running from source):** Rename `.env.example` to `.env` in the root directory and place your keys there for local testing.
 
 ### 🔴 Required Keys
@@ -276,7 +314,7 @@ IRIS operates locally, but requires specific API keys to bridge the gap to large
 The Neural OS requires these core engines to process logic and execute actions.
 
 - **[Google Gemini API](https://aistudio.google.com/app/apikey)** (`GEMINI_API_KEY`)
-  - **Role:** The primary reasoning and generative engine for IRIS.
+  - **Role:** The primary reasoning and generative engine for Sypher AI.
   - **Setup:** Sign in to Google AI Studio > Click 'Get API Key' > Create a key.
 
 - **[Groq API](https://console.groq.com/keys)** (`GROQ_API_KEY`)
@@ -301,14 +339,28 @@ These keys unlock advanced, autonomous subsystems.
 # 📁 Project Structure
 
 ```text
-iris/
+sypher-ai/
 ├── build/                   # OS-specific build artifacts
 ├── out/                     # Compiled output ready for packaging
 ├── resources/               # Static assets (icons, trained data, etc.)
 ├── src/                     # Core application source code
 │   ├── main/                # Electron Main Process (Node.js backend & OS execution)
+│   │   ├── auto/            # Auto-update + lifecycle
+│   │   ├── handlers/        # IPC handlers (screen peeler, lock system, etc.)
+│   │   ├── logic/           # Core OS logic (file ops, ADB, ghost control, memory…)
+│   │   ├── security/        # Vault, biometrics, encrypted personality store
+│   │   ├── services/        # RAG Oracle, Deep Research, Wormhole, Coder
+│   │   └── workflow/        # Macro persistence (load/save/delete workflows)
 │   ├── preload/             # Context Isolation Scripts (The IPC secure bridge)
-│   └── renderer/            # React Frontend (UI, floating widgets, GSAP animations)
+│   └── renderer/            # React Frontend
+│       └── src/
+│           ├── views/       # DASHBOARD, MACROS, APPS, NOTES, GALLERY, PHONE, SETTINGS
+│           ├── components/  # Sphere, Titlebar, MiniOverlay, ToolNode…
+│           ├── Widgets/     # Floating context widgets (maps, stocks, oracle…)
+│           ├── services/    # Iris-voice-ai (Gemini Live brain), system-info
+│           ├── tools/       # Renderer-side tool adapters
+│           ├── functions/   # Higher-level feature APIs
+│           └── code/        # Macro executor + animated website builder
 ├── .env.example             # Template for API keys and environment variables
 ├── electron-builder.yml     # Configuration for packaging the .exe / .app / .AppImage
 ├── electron.vite.config.ts  # Vite configuration for the split architecture
@@ -329,7 +381,7 @@ iris/
 
 ## 🤝 Contributing
 
-IRIS is built for the community. If you want to expand the neural forge, submit a PR.
+Sypher AI is built for the community. If you want to expand the neural forge, submit a PR.
 
 ### Quick Start
 
@@ -354,14 +406,15 @@ Keep your commit messages clean, descriptive, and easy to understand. Clearly st
 
 ---
 
-# 🧩 Extending IRIS
+# 🧩 Extending Sypher AI
 
 You can:
 
-- Add new IPC tools
+- Add new IPC tools (register handler in `src/main`, expose typing in `src/preload`)
+- Add a new agent tool (declare it in `src/renderer/src/services/Iris-voice-ai.ts` and dispatch it in the tool-call switch)
 - Integrate APIs
 - Build automation modules
-- Extend UI widgets
+- Extend UI widgets in `src/renderer/src/Widgets`
 
 ---
 
@@ -377,7 +430,7 @@ You can:
 
 # ⚠️ Disclaimer
 
-IRIS has deep system-level execution capabilities.  
+Sypher AI has deep system-level execution capabilities.  
 Use responsibly. The maintainers are not liable for misuse.
 
 ---
@@ -402,7 +455,7 @@ MIT License — see LICENSE file.
 
 # 🟥 Final Note
 
-**IRIS is not a chatbot.** It is a **neural extension of your operating system**.
+**Sypher AI is not a chatbot.** It is a **neural extension of your operating system**.
 
 > _System Online._
 

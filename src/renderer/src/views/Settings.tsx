@@ -56,6 +56,9 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   const [isScanningFace, setIsScanningFace] = useState(false)
   const [enrollStatus, setEnrollStatus] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
+  const enrollStreamRef = useRef<MediaStream | null>(null)
+  const enrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const enrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [appVersion, setAppVersion] = useState('1.1.5')
   const [updateStatus, setUpdateStatus] = useState<
@@ -220,9 +223,43 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
     alert('Master PIN Updated Successfully.')
   }
 
+  const stopEnrollment = () => {
+    if (enrollIntervalRef.current) {
+      clearInterval(enrollIntervalRef.current)
+      enrollIntervalRef.current = null
+    }
+    if (enrollTimeoutRef.current) {
+      clearTimeout(enrollTimeoutRef.current)
+      enrollTimeoutRef.current = null
+    }
+    if (enrollStreamRef.current) {
+      enrollStreamRef.current.getTracks().forEach((t) => t.stop())
+      enrollStreamRef.current = null
+    }
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause()
+      } catch {}
+      videoRef.current.srcObject = null
+    }
+  }
+
+  const cancelFaceEnrollment = () => {
+    stopEnrollment()
+    setEnrollStatus('')
+    setIsScanningFace(false)
+  }
+
+  useEffect(() => {
+    return () => stopEnrollment()
+  }, [])
+
   const startFaceEnrollment = async () => {
     setIsScanningFace(true)
-    setEnrollStatus('INITIALIZING CAMERA...')
+    setEnrollStatus('LOADING NEURAL MODELS...')
+
+    let stream: MediaStream | null = null
+
     try {
       await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromUri('./models'),
@@ -230,37 +267,82 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
         faceapi.nets.faceRecognitionNet.loadFromUri('./models')
       ])
 
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        setEnrollStatus('POSITION FACE IN FRAME')
+      setEnrollStatus('STARTING OPTICAL FEED...')
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 }
+      })
+      enrollStreamRef.current = stream
 
-        const scanInterval = setInterval(async () => {
-          if (!videoRef.current || videoRef.current.readyState !== 4) return
+      // Wait one tick so the <video> is mounted before binding the stream
+      await new Promise((r) => requestAnimationFrame(() => r(null)))
+
+      if (!videoRef.current) {
+        throw new Error('Video element unavailable')
+      }
+
+      videoRef.current.srcObject = stream
+      try {
+        await videoRef.current.play()
+      } catch {
+        // some browsers throw a benign AbortError on rapid play/pause; ignore
+      }
+
+      setEnrollStatus('POSITION FACE IN FRAME')
+
+      const detectorOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 })
+
+      enrollTimeoutRef.current = setTimeout(() => {
+        if (!isScanningFace) return
+        setEnrollStatus('NO FACE DETECTED — CANCEL & RETRY')
+      }, 30000)
+
+      enrollIntervalRef.current = setInterval(async () => {
+        if (!videoRef.current || videoRef.current.readyState !== 4) return
+
+        try {
           const detection = await faceapi
-            .detectSingleFace(videoRef.current)
+            .detectSingleFace(videoRef.current, detectorOptions)
             .withFaceLandmarks()
             .withFaceDescriptor()
 
-          if (detection) {
-            clearInterval(scanInterval)
-            setEnrollStatus('FACE ACQUIRED. ENCRYPTING...')
-            const descriptorArray = Array.from(detection.descriptor)
+          if (!detection) return
 
-            if (window.electron?.ipcRenderer) {
-              await window.electron.ipcRenderer.invoke('setup-vault-face', descriptorArray)
-            }
-
-            stream.getTracks().forEach((t) => t.stop())
-            setIsScanningFace(false)
-            setFaceCount((prev) => prev + 1)
-            alert('New Biometric Identity Saved.')
+          if (enrollIntervalRef.current) {
+            clearInterval(enrollIntervalRef.current)
+            enrollIntervalRef.current = null
           }
-        }, 1000)
+          if (enrollTimeoutRef.current) {
+            clearTimeout(enrollTimeoutRef.current)
+            enrollTimeoutRef.current = null
+          }
+
+          setEnrollStatus('FACE ACQUIRED. ENCRYPTING...')
+          const descriptorArray = Array.from(detection.descriptor)
+
+          if (window.electron?.ipcRenderer) {
+            await window.electron.ipcRenderer.invoke('setup-vault-face', descriptorArray)
+          }
+
+          stopEnrollment()
+          setIsScanningFace(false)
+          setFaceCount((prev) => prev + 1)
+          alert('New Biometric Identity Saved.')
+        } catch (err) {
+          setEnrollStatus('SCAN ERROR — RETRYING')
+        }
+      }, 700)
+    } catch (e: any) {
+      stopEnrollment()
+      const msg = String(e?.message || e || '')
+      if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('notallowed')) {
+        setEnrollStatus('CAMERA PERMISSION DENIED')
+      } else {
+        setEnrollStatus('CAMERA ERROR')
       }
-    } catch (e) {
-      setEnrollStatus('CAMERA ERROR')
-      setTimeout(() => setIsScanningFace(false), 2000)
+      setTimeout(() => {
+        setIsScanningFace(false)
+        setEnrollStatus('')
+      }, 2200)
     }
   }
 
@@ -642,12 +724,19 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                           playsInline
                           className="w-16 h-16 rounded-lg object-cover -scale-x-100 border border-white/10"
                         />
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[11px] text-white font-mono tracking-widest animate-pulse font-bold">
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                          <span className="text-[11px] text-white font-mono tracking-widest animate-pulse font-bold truncate">
                             {enrollStatus}
                           </span>
                           <span className="text-xs text-zinc-400">Keep head steady...</span>
                         </div>
+                        <button
+                          onClick={cancelFaceEnrollment}
+                          title="Cancel scan"
+                          className="shrink-0 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors cursor-pointer"
+                        >
+                          <RiCloseLine size={16} />
+                        </button>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-4 h-full justify-between">
