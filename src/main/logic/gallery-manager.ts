@@ -28,7 +28,7 @@ export default function registerGalleryHandlers(ipcMain: IpcMain) {
           return {
             filename: file,
             displayName: file
-              .replace(/_\d+_Generated_by_IRIS\.png$/, '')
+              .replace(/_\d+_Generated_by_SYPHER\.png$/, '')
               .replace(/_/g, ' '), 
             path: filePath,
             url: fileUrl,
@@ -49,7 +49,7 @@ export default function registerGalleryHandlers(ipcMain: IpcMain) {
         .substring(0, 50)
 
       const timestamp = Date.now()
-      const fileName = `${safeTitle}_${timestamp}_Generated_by_IRIS.png`
+      const fileName = `${safeTitle}_${timestamp}_Generated_by_SYPHER.png`
       const filePath = path.join(GALLERY_DIR, fileName)
 
       const data = base64Data.replace(/^data:image\/\w+;base64,/, '')

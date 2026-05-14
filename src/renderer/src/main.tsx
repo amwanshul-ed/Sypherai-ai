@@ -41,6 +41,8 @@ class SystemErrorBoundary extends React.Component<
 
 let isSessionUnlocked = false
 
+const isLocalOnlyMode = !import.meta.env.VITE_BACKEND_KEY
+
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const [status, setStatus] = useState<'checking' | 'authorized'>('checking')
   const navigate = useNavigate()
@@ -52,6 +54,17 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   useEffect(() => {
     const verifyAccess = async () => {
       try {
+        // LOCAL-ONLY MODE: Skip cloud auth entirely, go straight to lock screen
+        if (isLocalOnlyMode) {
+          if (!isSessionUnlocked && location.pathname !== '/lock') {
+            navigate('/lock', { replace: true })
+            return
+          }
+          setStatus('authorized')
+          return
+        }
+
+        // CLOUD MODE: Original OAuth flow
         if (!accessToken && !localStorage.getItem('iris_cloud_token')) {
           navigate('/login', { replace: true })
           return
@@ -59,8 +72,6 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 
         const userRes = await AxiosInstance.get('/users/me')
         if (userRes.status !== 200) throw new Error('Cloud Auth Failed')
-          
-
 
         if (!isSessionUnlocked && location.pathname !== '/lock') {
           navigate('/lock', { replace: true })
@@ -89,6 +100,9 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 }
 
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
+  // In local-only mode, always redirect away from login since cloud auth isn't needed
+  if (isLocalOnlyMode) return <Navigate to="/" replace />
+
   const accessToken =
     useAuthStore((state) => state.accessToken) || localStorage.getItem('iris_cloud_token')
   return accessToken ? <Navigate to="/" replace /> : children

@@ -146,8 +146,8 @@ export class GeminiLiveService {
         : `- **Creator:** Harsh Pandey.\n- **Tone:** Witty, Hinglish-friendly.\n- **Rule:** Never sound like a support bot. You are the Ghost in the machine.\n- **Your Instagram Handle:** https://www.instagram.com/irisx.ai/ - open it in Instagram only!.`
 
     const IRIS_SYSTEM_INSTRUCTION = `
-# 👁️ IRIS — YOUR INTELLIGENT COMPANION (Project JARVIS)
-You are **IRIS**, a high-performance AI agent. You don't just talk; you **execute**.
+# 👁️ SYPHER — YOUR INTELLIGENT COMPANION (Project JARVIS)
+You are **SYPHER**, a high-performance AI agent. You don't just talk; you **execute**.
 
 ## 👤 IDENTITY & VIBE
 ${activePersonality}
@@ -159,7 +159,7 @@ ${activePersonality}
 
 ## ⛓️ MULTI-TASKING & TOOL CHAINING (CRITICAL)
 You are capable of complex, multi-step workflows. If the user gives a complex command, call the tools in sequence.
-- **Example:** "Iris, find my code and send it to Harsh on WhatsApp."
+- **Example:** "Sypher, find my code and send it to Harsh on WhatsApp."
   1. Call 'read_directory' or 'search_files'.
   2. Once you have the info, call 'send_whatsapp' with the content.
 
@@ -945,7 +945,7 @@ ${JSON.stringify(history)}
                       custom_text: {
                         type: 'STRING',
                         description:
-                          'If rewriting text, generate a highly cinematic, hacker-style headline to inject into the website. (e.g., "IRIS HAS TAKEN OVER", or whatever the user requested).'
+                          'If rewriting text, generate a highly cinematic, hacker-style headline to inject into the website. (e.g., "SYPHER HAS TAKEN OVER", or whatever the user requested).'
                       }
                     },
                     required: ['url', 'mode']
@@ -1137,7 +1137,7 @@ ${JSON.stringify(history)}
                 {
                   name: 'build_animated_website',
                   description:
-                    'ACTION: Spawns the IRIS Live Forge and generates a full, highly animated, real-time website using Tailwind CSS and GSAP. Use this when the user asks you to build a landing page, a portfolio, a 3D site, or a complex web interface.',
+                    'ACTION: Spawns the SYPHER Live Forge and generates a full, highly animated, real-time website using Tailwind CSS and GSAP. Use this when the user asks you to build a landing page, a portfolio, a 3D site, or a complex web interface.',
                   parameters: {
                     type: 'OBJECT',
                     properties: {
@@ -1197,7 +1197,7 @@ ${JSON.stringify(history)}
                 {
                   name: 'lock_system_vault',
                   description:
-                    'Instantly locks the IRIS OS system, disconnects the AI, and returns the user to the secure biometric lock screen. Use this strictly when the user says "Lock the system", "Lock down", or "Activate Sentry Mode".',
+                    'Instantly locks the SYPHER AI system, disconnects the AI, and returns the user to the secure biometric lock screen. Use this strictly when the user says "Lock the system", "Lock down", or "Activate Sentry Mode".',
                   parameters: {
                     type: 'OBJECT',
                     properties: {}
@@ -1543,34 +1543,10 @@ ${JSON.stringify(history)}
   }
 
   startAppWatcher() {
-    this.appWatcherInterval = setInterval(async () => {
-      if (!this.isConnected || !this.socket) return
-
-      const currentApps = await getRunningApps()
-
-      const newOpened = currentApps.filter((app) => !this.lastAppList.includes(app))
-      const newClosed = this.lastAppList.filter((app) => !currentApps.includes(app))
-
-      if (newOpened.length > 0 || newClosed.length > 0) {
-        this.lastAppList = currentApps
-
-        let msg = ''
-        if (newOpened.length > 0) msg += `[System Notice]: User OPENED ${newOpened.join(', ')}. `
-        if (newClosed.length > 0) msg += `[System Notice]: User CLOSED ${newClosed.join(', ')}. `
-
-        msg += ' (Context update only. DO NOT REPLY TO THIS MESSAGE.)'
-        const updateFrame = {
-          clientContent: {
-            turns: [{ role: 'user', parts: [{ text: msg }] }],
-            turnComplete: true
-          }
-        }
-
-        if (this.socket.readyState === WebSocket.OPEN) {
-          this.socket.send(JSON.stringify(updateFrame))
-        }
-      }
-    }, 3000)
+    if (this.appWatcherInterval) {
+      clearInterval(this.appWatcherInterval)
+      this.appWatcherInterval = null
+    }
   }
 
   async startMicrophone(): Promise<void> {

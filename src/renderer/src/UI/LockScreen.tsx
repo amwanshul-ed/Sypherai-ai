@@ -524,7 +524,7 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
 
       <div className="absolute bottom-6 flex flex-col items-center gap-1 z-50">
         <span className="text-[9px] font-mono tracking-widest text-zinc-600 uppercase">
-          IRIS Kernel Security Engine V3.5
+          SYPHER Kernel Security Engine V3.5
         </span>
         <span className="text-[8px] font-mono tracking-widest text-emerald-700/50 uppercase">
           100% Local Execution Environment

@@ -54,7 +54,7 @@ export default function TerminalOverlay() {
 
       term.writeln('\x1b[32m╔════════════════════════════════════════╗\x1b[0m')
       term.writeln('\x1b[32m║  SYSTEM CORE: ONLINE                   ║\x1b[0m')
-      term.writeln('\x1b[32m║  PROTOCOL: IRIS_GHOST_SHELL_V2         ║\x1b[0m')
+      term.writeln('\x1b[32m║  PROTOCOL: SYPHER_GHOST_SHELL_V2         ║\x1b[0m')
       term.writeln('\x1b[32m╚════════════════════════════════════════╝\x1b[0m')
       term.writeln('')
     }, 100)
@@ -99,7 +99,7 @@ export default function TerminalOverlay() {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#00ff41]"></div>
             <span className="text-[10px] font-mono font-bold tracking-widest text-green-400/80 uppercase">
-              IRIS TERMINAL // EXEC_MODE
+              SYPHER TERMINAL // EXEC_MODE
             </span>
           </div>
 

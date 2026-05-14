@@ -27,7 +27,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   const [uiMode, setUiMode] = useState<'history' | 'manual'>('history')
   const [errorMsg, setErrorMsg] = useState('')
   const [deviceHistory, setDeviceHistory] = useState<any[]>([])
-  const [copied, setCopied] = useState(false) 
+  const [copied, setCopied] = useState(false)
 
   const screenRef = useRef<HTMLImageElement>(null)
   const isStreaming = useRef(false)
@@ -101,7 +101,9 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
         startScreenStream()
       } else {
         setStatus('idle')
-        setErrorMsg('Connection refused. Ensure TCP/IP daemon is running (adb tcpip 5555).')
+        setErrorMsg(
+          res.error || 'Connection refused. Ensure TCP/IP daemon is running (adb tcpip 5555).'
+        )
       }
     } catch (e) {
       setStatus('idle')
@@ -565,7 +567,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
           <div className="mb-6 p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl">
             <p className="text-[10px] text-purple-400 font-mono leading-relaxed text-center">
-              IRIS is listening via the primary neural audio interface. Voice commands for app
+              SYPHER is listening via the primary neural audio interface. Voice commands for app
               execution are online.
             </p>
           </div>

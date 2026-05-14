@@ -39,7 +39,7 @@ export default function LiveCodingWidget() {
         return
       }
 
-      setCode('// Initializing IRIS Neural Forge...\n')
+      setCode('// Initializing SYPHER Neural Forge...\n')
 
       const result = await window.electron.ipcRenderer.invoke('start-live-coding', {
         prompt,

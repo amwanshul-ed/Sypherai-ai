@@ -135,7 +135,7 @@ export default function LoginPage() {
             </div>
 
             <h1 className="text-4xl font-black tracking-[0.2em] uppercase text-white mb-2 drop-shadow-md">
-              IRIS <span className="text-emerald-500">OS</span>
+              SYPHER <span className="text-emerald-500">AI</span>
             </h1>
             <p className="text-zinc-500 text-xs font-mono tracking-widest uppercase">
               Autonomous Local Workspace
@@ -228,7 +228,7 @@ export default function LoginPage() {
 
           <div className="mt-auto p-4 bg-emerald-900/10 border border-emerald-500/20 rounded-xl">
             <p className="text-[9px] text-emerald-400/80 tracking-widest uppercase leading-relaxed">
-              IRIS OS Operates strictly within local environments. External pings are limited to
+              SYPHER AI operates strictly within local environments. External pings are limited to
               authorized LLM endpoints.
             </p>
           </div>

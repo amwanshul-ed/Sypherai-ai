@@ -11,7 +11,7 @@ export default function registerDeepResearch({ ipcMain }: { ipcMain: IpcMain }) 
 
       event.sender.send('oracle-progress', {
         status: 'scanning',
-        file: 'IRIS and Tavily Neural Search Active...',
+        file: 'SYPHER and Tavily Neural Search Active...',
         totalFound: 1
       })
 

@@ -21,7 +21,9 @@ import {
   RiTerminalWindowLine,
   RiRefreshLine,
   RiDownloadCloud2Line,
-  RiRocketLine
+  RiRocketLine,
+  RiDeleteBin6Line,
+  RiCloseLine
 } from 'react-icons/ri'
 
 interface SettingsProps {
@@ -62,6 +64,13 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   const [updateVersion, setUpdateVersion] = useState('')
   const [updateNotes, setUpdateNotes] = useState('No new updates detected.')
   const [downloadProgress, setDownloadProgress] = useState(0)
+  const [memoryResetOptions, setMemoryResetOptions] = useState({
+    transcript: true,
+    coreMemory: true,
+    semanticDb: false,
+    oracleState: false
+  })
+  const [showMemoryDeleteDialog, setShowMemoryDeleteDialog] = useState(false)
 
   useEffect(() => {
     if (window.electron?.ipcRenderer) {
@@ -105,6 +114,44 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   const checkForUpdates = () => window.electron.ipcRenderer.invoke('check-for-updates')
   const downloadUpdate = () => window.electron.ipcRenderer.invoke('download-update')
   const installUpdate = () => window.electron.ipcRenderer.invoke('install-update')
+
+  const selectedResetLabels = [
+    memoryResetOptions.transcript && 'dashboard transcript',
+    memoryResetOptions.coreMemory && 'saved core memory',
+    memoryResetOptions.semanticDb && 'semantic search database',
+    memoryResetOptions.oracleState && 'Oracle codebase scan state'
+  ].filter(Boolean)
+
+  const hasResetSelection = selectedResetLabels.length > 0
+
+  const toggleMemoryResetOption = (key: keyof typeof memoryResetOptions) => {
+    setMemoryResetOptions((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const resetLocalMemory = async () => {
+    if (!hasResetSelection) return
+
+    if (!window.electron?.ipcRenderer) return
+
+    try {
+      const result = await window.electron.ipcRenderer.invoke(
+        'reset-local-memory',
+        memoryResetOptions
+      )
+      if (result?.success) {
+        setShowMemoryDeleteDialog(false)
+        alert(
+          isSystemActive
+            ? 'Memory banks purged. Disconnect and reconnect SYPHER to clear the active live session context.'
+            : 'Memory banks purged.'
+        )
+      } else {
+        alert(`Memory reset failed: ${result?.error || 'Unknown system fault.'}`)
+      }
+    } catch (error: any) {
+      alert(`Memory reset failed: ${error?.message || String(error)}`)
+    }
+  }
 
   const handleVoiceChange = (v: 'MALE' | 'FEMALE') => {
     if (isSystemActive) return
@@ -286,86 +333,26 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                 transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 md:grid-cols-2 gap-6 absolute w-full"
               >
-                <div className={`${cardClass} md:col-span-1 border-emerald-500/20`}>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <span className={titleClass}>
-                      <RiRocketLine className="text-emerald-400" size={18} /> OS Firmware
-                    </span>
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded font-mono font-bold tracking-widest">
-                      v{appVersion}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col gap-4 items-center justify-center flex-1 py-4 text-center">
-                    {updateStatus === 'idle' || updateStatus === 'error' ? (
-                      <>
-                        <RiTerminalWindowLine size={48} className="text-zinc-700" />
-                        <p className="text-xs text-zinc-400 font-mono">Current build is stable.</p>
-                        <button
-                          onClick={checkForUpdates}
-                          className="mt-2 w-full py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all cursor-pointer"
-                        >
-                          <RiRefreshLine size={16} /> CHECK FOR UPDATES
-                        </button>
-                      </>
-                    ) : updateStatus === 'checking' ? (
-                      <>
-                        <RiRefreshLine size={48} className="text-emerald-500 animate-spin" />
-                        <p className="text-xs text-emerald-400 font-mono animate-pulse">
-                          PINGING NEURAL NETWORK...
-                        </p>
-                      </>
-                    ) : updateStatus === 'available' ? (
-                      <>
-                        <RiDownloadCloud2Line size={48} className="text-cyan-400" />
-                        <p className="text-xs text-cyan-400 font-mono">
-                          NEW BUILD FOUND: v{updateVersion}
-                        </p>
-                        <button
-                          onClick={downloadUpdate}
-                          className="mt-2 w-full py-3 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 text-cyan-400 hover:text-black font-bold tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all border border-cyan-500/50 cursor-pointer"
-                        >
-                          <RiDownloadCloud2Line size={16} /> INITIALIZE DOWNLOAD
-                        </button>
-                      </>
-                    ) : updateStatus === 'downloading' ? (
-                      <div className="w-full flex flex-col gap-3">
-                        <div className="flex justify-between text-[10px] font-mono text-zinc-400">
-                          <span>DOWNLOADING PATCH...</span>
-                          <span>{downloadProgress}%</span>
-                        </div>
-                        <div className="w-full h-2 bg-black rounded-full overflow-hidden border border-white/10">
-                          <div
-                            className="h-full bg-cyan-500 shadow-[0_0_10px_#06b6d4] transition-all duration-300"
-                            style={{ width: `${downloadProgress}%` }}
-                          />
-                        </div>
+                <div className={`${cardClass} md:col-span-2 border-red-500/20`}>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+                        <RiDeleteBin6Line size={22} />
                       </div>
-                    ) : (
-                      <>
-                        <RiRecordCircleLine size={48} className="text-emerald-400 animate-pulse" />
-                        <p className="text-xs text-emerald-400 font-mono">PATCH DOWNLOADED</p>
-                        <button
-                          onClick={installUpdate}
-                          className="mt-2 w-full py-3 rounded-lg bg-emerald-500 text-black font-bold tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer"
-                        >
-                          <RiRocketLine size={16} /> EXECUTE RESTART
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className={`${cardClass} md:col-span-1`}>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <span className={titleClass}>
-                      <RiTerminalWindowLine className="text-zinc-400" size={18} /> Patch Notes
-                    </span>
-                  </div>
-                  <div className="flex-1 bg-[#050505] border border-white/5 rounded-xl p-4 overflow-y-auto max-h-60 scrollbar-small">
-                    <pre className="text-[11px] font-mono text-zinc-400 whitespace-pre-wrap leading-relaxed">
-                      {updateNotes}
-                    </pre>
+                      <div className="flex flex-col gap-2">
+                        <span className={titleClass}>Delete Memory</span>
+                        <p className="text-[10px] text-zinc-500 font-mono leading-relaxed max-w-xl">
+                          Clear old chats or saved memory without touching API keys, security,
+                          notes, macros, or phone setup.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowMemoryDeleteDialog(true)}
+                      className="px-6 py-3 rounded-lg bg-red-500/10 hover:bg-red-500 border border-red-500/30 text-red-400 hover:text-white font-bold tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <RiDeleteBin6Line size={16} /> DELETE MEMORY
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -403,7 +390,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                   <textarea
                     value={personality}
                     onChange={handlePersonalityChange}
-                    placeholder="Define who IRIS is. Example: 'You are a sassy, highly technical assistant...'"
+                    placeholder="Define who SYPHER is. Example: 'You are a sassy, highly technical assistant...'"
                     className="bg-[#050505] border border-white/10 rounded-lg p-4 text-sm text-zinc-200 h-32 resize-none focus:border-white/30 outline-none transition-all scrollbar-small"
                   />
                 </div>
@@ -438,7 +425,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                     </span>
                     {isSystemActive && (
                       <span className="text-[10px] text-red-400 font-mono tracking-widest flex items-center gap-1 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">
-                        <RiLock2Line /> LOCKED AS IRIS IS CONNECTED
+                        <RiLock2Line /> LOCKED AS SYPHER IS CONNECTED
                       </span>
                     )}
                   </div>
@@ -559,7 +546,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                     <RiShieldKeyholeLine className="text-zinc-500 shrink-0 mt-0.5" size={16} />
                     <p className="text-[10px] text-zinc-400 font-mono leading-relaxed">
                       [SECURITY NOTICE]: All API keys are encrypted and stored strictly in your
-                      local OS. IRIS does not transmit these keys to any centralized server. You
+                      local OS. SYPHER does not transmit these keys to any centralized server. You
                       maintain full ownership and billing control over your provider endpoints.
                     </p>
                   </div>
@@ -682,6 +669,120 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
             )}
           </AnimatePresence>
         </div>
+
+        <AnimatePresence>
+          {showMemoryDeleteDialog && (
+            <motion.div
+              className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 12 }}
+                className="w-full max-w-2xl rounded-2xl border border-red-500/20 bg-[#0f0f13] shadow-2xl overflow-hidden"
+              >
+                <div className="flex items-center justify-between border-b border-white/10 p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+                      <RiDeleteBin6Line size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">What do you want to delete?</h3>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-1">
+                        API keys, lock screen, notes, macros, and phone setup will not be deleted.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowMemoryDeleteDialog(false)}
+                    className="p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                  >
+                    <RiCloseLine size={20} />
+                  </button>
+                </div>
+
+                <div className="p-5 grid grid-cols-1 gap-3">
+                  {[
+                    {
+                      key: 'transcript',
+                      label: 'Chat history',
+                      detail: 'Deletes the transcript shown on the Dashboard.'
+                    },
+                    {
+                      key: 'coreMemory',
+                      label: 'Saved memory',
+                      detail: 'Deletes facts SYPHER saved about you or your work.'
+                    },
+                    {
+                      key: 'semanticDb',
+                      label: 'File search database',
+                      detail: 'Deletes indexed file-search data. You can rebuild it later.'
+                    },
+                    {
+                      key: 'oracleState',
+                      label: 'Codebase answer cache',
+                      detail: 'Deletes stored codebase RAG scan data.'
+                    }
+                  ].map((item) => {
+                    const key = item.key as keyof typeof memoryResetOptions
+                    return (
+                      <label
+                        key={item.key}
+                        className={`cursor-pointer flex items-start gap-3 rounded-xl border p-4 transition-all ${
+                          memoryResetOptions[key]
+                            ? 'bg-red-500/10 border-red-500/30'
+                            : 'bg-black/30 border-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={memoryResetOptions[key]}
+                          onChange={() => toggleMemoryResetOption(key)}
+                          className="mt-1 h-4 w-4 accent-red-500"
+                        />
+                        <span className="flex flex-col gap-1">
+                          <span className="text-sm font-bold text-zinc-100">{item.label}</span>
+                          <span className="text-xs text-zinc-500 leading-relaxed">
+                            {item.detail}
+                          </span>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-white/10 bg-black/30 p-5">
+                  <p className="text-[10px] text-zinc-500 font-mono leading-relaxed">
+                    Selected:{' '}
+                    {selectedResetLabels.length > 0 ? selectedResetLabels.join(', ') : 'nothing'}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowMemoryDeleteDialog(false)}
+                      className="px-5 py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 font-bold tracking-widest text-[11px] transition-all cursor-pointer"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      onClick={resetLocalMemory}
+                      disabled={!hasResetSelection}
+                      className={`px-5 py-3 rounded-lg border font-bold tracking-widest text-[11px] flex items-center justify-center gap-2 transition-all ${
+                        hasResetSelection
+                          ? 'cursor-pointer bg-red-500/10 hover:bg-red-500 border-red-500/30 text-red-400 hover:text-white'
+                          : 'cursor-not-allowed bg-white/5 border-white/10 text-zinc-600'
+                      }`}
+                    >
+                      <RiDeleteBin6Line size={16} /> DELETE SELECTED
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   )

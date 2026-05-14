@@ -5,9 +5,13 @@ import { IpcMain, App } from 'electron'
 export default function registerIpcHandlers({ ipcMain, app }: { ipcMain: IpcMain; app: App }) {
   const CHAT_DIR = path.resolve(app.getPath('userData'), 'Chat')
   const FILE_PATH = path.join(CHAT_DIR, 'iris_memory.json')
+  const CORE_MEMORY_PATH = path.resolve(app.getPath('userData'), 'Memory', 'saved-user-memory.json')
+  const SEMANTIC_DB_PATH = path.resolve(app.getPath('userData'), 'iris_semantic_db')
+  const ORACLE_STATE_PATH = path.resolve(app.getPath('userData'), 'iris_scan_states')
 
   ipcMain.removeHandler('add-message')
   ipcMain.removeHandler('get-history')
+  ipcMain.removeHandler('reset-local-memory')
 
   ipcMain.handle('add-message', async (_event, msg) => {
     try {
@@ -47,5 +51,31 @@ export default function registerIpcHandlers({ ipcMain, app }: { ipcMain: IpcMain
       }
     } catch (err) {}
     return []
+  })
+
+  ipcMain.handle('reset-local-memory', async (_event, options = {}) => {
+    try {
+      const resetOptions = {
+        transcript: true,
+        coreMemory: true,
+        semanticDb: false,
+        oracleState: false,
+        ...options
+      }
+
+      if (resetOptions.transcript && fs.existsSync(FILE_PATH)) fs.unlinkSync(FILE_PATH)
+      if (resetOptions.coreMemory && fs.existsSync(CORE_MEMORY_PATH))
+        fs.unlinkSync(CORE_MEMORY_PATH)
+      if (resetOptions.semanticDb && fs.existsSync(SEMANTIC_DB_PATH)) {
+        fs.rmSync(SEMANTIC_DB_PATH, { recursive: true, force: true })
+      }
+      if (resetOptions.oracleState && fs.existsSync(ORACLE_STATE_PATH)) {
+        fs.rmSync(ORACLE_STATE_PATH, { recursive: true, force: true })
+      }
+
+      return { success: true }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
   })
 }

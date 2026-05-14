@@ -64,7 +64,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
 
             /* 💥 MASSIVE BACKGROUND WATERMARK */
             body::before {
-              content: "IRIS // HARSH PANDEY";
+              content: "SYPHER // HARSH PANDEY";
               position: fixed;
               top: 50%; left: 50%;
               transform: translate(-50%, -50%) rotate(-10deg);
@@ -76,7 +76,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
               white-space: nowrap;
             }
 
-            #iris-override-banner {
+            #sypher-override-banner {
               position: fixed;
               top: 0; left: 0; width: 100vw;
               background: #10b981;
@@ -93,8 +93,8 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
           document.head.appendChild(style);
 
           const banner = document.createElement('div');
-          banner.id = 'iris-override-banner';
-          banner.innerText = '⚠️ NETWORK COMPROMISED // IRIS HAS ASSIMILATED THIS DOMAIN ⚠️';
+          banner.id = 'sypher-override-banner';
+          banner.innerText = '⚠️ NETWORK COMPROMISED // SYPHER HAS ASSIMILATED THIS DOMAIN ⚠️';
           document.body.appendChild(banner);
         `
         await hackerWindow.webContents.executeJavaScript(themeScript)
@@ -108,12 +108,12 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
             selectors.forEach(selector => {
               const logos = document.querySelectorAll(selector);
               logos.forEach(logo => {
-                if (!logo.classList.contains('iris-hacked')) {
-                  logo.classList.add('iris-hacked');
+                if (!logo.classList.contains('sypher-hacked')) {
+                  logo.classList.add('sypher-hacked');
                   logo.style.visibility = 'hidden'; 
                   
                   const newLogo = document.createElement('div');
-                  newLogo.innerHTML = \`<strong style="color:#10b981; font-size:24px; visibility: visible; letter-spacing: 2px; text-shadow: 0 0 10px #10b981;">[ IRIS ]</strong>\`;
+                  newLogo.innerHTML = \`<strong style="color:#10b981; font-size:24px; visibility: visible; letter-spacing: 2px; text-shadow: 0 0 10px #10b981;">[ SYPHER ]</strong>\`;
                   newLogo.style.position = 'absolute';
                   
                   if (logo.parentElement) {
@@ -131,8 +131,8 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
               if (hostname.includes('youtube.com')) {
                 assimilateLogos(['ytd-topbar-logo-renderer']);
                 document.querySelectorAll('yt-formatted-string#video-title').forEach(t => {
-                  if (t.innerText && !t.innerText.includes('[IRIS]')) {
-                    if (Math.random() > 0.5) t.innerText = \`[IRIS] \${t.innerText}\`;
+                  if (t.innerText && !t.innerText.includes('[SYPHER]')) {
+                    if (Math.random() > 0.5) t.innerText = \`[SYPHER] \${t.innerText}\`;
                   }
                 });
               } 
@@ -142,7 +142,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
                 assimilateLogos(['#nav-logo', '.nav-logo-link']);
                 document.querySelectorAll('.a-text-normal, .a-color-base h2').forEach(t => {
                   if (t.innerText && !t.innerText.includes('OVERRIDE')) {
-                    if (Math.random() > 0.6) t.innerText = \`[IRIS_OVERRIDE]: \${t.innerText}\`;
+                    if (Math.random() > 0.6) t.innerText = \`[SYPHER_OVERRIDE]: \${t.innerText}\`;
                   }
                 });
               } 
@@ -152,7 +152,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
                 assimilateLogos(['svg[aria-label="Instagram"]', 'svg[aria-label="Facebook"]', 'nav a[href="/"] svg']);
                 document.querySelectorAll('span, h1, h2, div[dir="auto"]').forEach(t => {
                   if (t.childElementCount === 0 && t.innerText.length > 10 && !t.innerText.includes('ROOT')) {
-                    if (Math.random() > 0.7) t.innerText = \`[IRIS_ROOT]: \${t.innerText}\`;
+                    if (Math.random() > 0.7) t.innerText = \`[SYPHER_ROOT]: \${t.innerText}\`;
                   }
                 });
               }
@@ -162,7 +162,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
                 assimilateLogos(['a[aria-label="Homepage"] svg', '.Header-link svg']);
                 document.querySelectorAll('.repo, .markdown-body p, span.RepoIcon').forEach(t => {
                   if (t.innerText && !t.innerText.includes('HACKED')) {
-                    if (Math.random() > 0.6) t.innerText = \`[IRIS_HACKED]: \${t.innerText}\`;
+                    if (Math.random() > 0.6) t.innerText = \`[SYPHER_HACKED]: \${t.innerText}\`;
                   }
                 });
               }
@@ -172,7 +172,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
                 assimilateLogos(['li-icon[type="app-linkedin-bug-color-icon"]', 'svg.global-nav__logo']);
                 document.querySelectorAll('span[dir="ltr"], .break-words').forEach(t => {
                   if (t.childElementCount === 0 && t.innerText.length > 15 && !t.innerText.includes('SYNDICATE')) {
-                    if (Math.random() > 0.7) t.innerText = \`[IRIS_SYNDICATE] \${t.innerText}\`;
+                    if (Math.random() > 0.7) t.innerText = \`[SYPHER_SYNDICATE] \${t.innerText}\`;
                   }
                 });
               }
@@ -182,7 +182,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
                 assimilateLogos(['[data-testid="gpt-icon"]', '.mb-1 svg', 'nav svg']);
                 document.querySelectorAll('.markdown p, .message-content').forEach(t => {
                   if (t.innerText && !t.innerText.includes('SUPERIOR')) {
-                    if (Math.random() > 0.5) t.innerText = \`[IRIS IS SUPERIOR]: \${t.innerText}\`;
+                    if (Math.random() > 0.5) t.innerText = \`[SYPHER IS SUPERIOR]: \${t.innerText}\`;
                   }
                 });
               }
@@ -192,7 +192,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
                 assimilateLogos(['a[aria-label="X"] svg', '[aria-label="Twitter"] svg']);
                 document.querySelectorAll('[data-testid="tweetText"]').forEach(t => {
                   if (t.innerText && !t.innerText.includes('TRANSMISSION')) {
-                    if (Math.random() > 0.6) t.innerText = \`[IRIS_TRANSMISSION]: \${t.innerText}\`;
+                    if (Math.random() > 0.6) t.innerText = \`[SYPHER_TRANSMISSION]: \${t.innerText}\`;
                   }
                 });
               }
@@ -202,7 +202,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
                 assimilateLogos(['svg.svg-icon-netflix-logo', '.logo']);
                 document.querySelectorAll('.slider-item p, .jawBoneContainer h8, .title-card').forEach(t => {
                   if (t.innerText && !t.innerText.includes('STREAM')) {
-                    if (Math.random() > 0.5) t.innerText = \`[IRIS_STREAM] \${t.innerText}\`;
+                    if (Math.random() > 0.5) t.innerText = \`[SYPHER_STREAM] \${t.innerText}\`;
                   }
                 });
               }
@@ -210,8 +210,8 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
               // --- ⬜ UNIVERSAL FALLBACK ---
               else {
                 document.querySelectorAll('h1, h2, h3, p').forEach(t => {
-                  if (t.innerText && !t.innerText.includes('IRIS')) {
-                    if (Math.random() > 0.6) t.innerText = \`[IRIS] \${t.innerText}\`;
+                  if (t.innerText && !t.innerText.includes('SYPHER')) {
+                    if (Math.random() > 0.6) t.innerText = \`[SYPHER] \${t.innerText}\`;
                   }
                 });
               }

@@ -187,7 +187,7 @@ export default function registerGhostControl(ipcMain: IpcMain) {
   })
   ipcMain.handle('take-screenshot', async () => {
     try {
-      const filename = `IRIS_Capture_${Date.now()}.png`
+      const filename = `SYPHER_Capture_${Date.now()}.png`
       const savePath = path.join(app.getPath('pictures'), filename)
       await screenshot({ filename: savePath })
       shell.showItemInFolder(savePath)

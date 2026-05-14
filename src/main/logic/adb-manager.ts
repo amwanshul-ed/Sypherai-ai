@@ -8,6 +8,29 @@ const execAsync = util.promisify(exec)
 
 let activeDevice: { ip: string; port: string } | any | null = null
 
+const resolveAdbCommand = () => {
+  const candidates = [
+    process.env.ADB_PATH,
+    'C:\\platform-tools\\adb.exe',
+    path.join(process.env.LOCALAPPDATA || '', 'Android', 'Sdk', 'platform-tools', 'adb.exe'),
+    'adb'
+  ].filter(Boolean) as string[]
+
+  for (const candidate of candidates) {
+    if (candidate === 'adb') return candidate
+    try {
+      require('fs').accessSync(candidate)
+      return `"${candidate}"`
+    } catch {
+      continue
+    }
+  }
+
+  return 'adb'
+}
+
+const ADB = resolveAdbCommand()
+
 export default function registerAdbHandlers(ipcMain: IpcMain) {
   const dirPath = path.join(app.getPath('userData'), 'Connected Devices')
   const historyPath = path.join(dirPath, 'Connect-mobile.json')
@@ -31,8 +54,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
         history.push(deviceData)
       }
       await fs.writeFile(historyPath, JSON.stringify(history, null, 2))
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   ipcMain.removeHandler('adb-get-history')
@@ -48,7 +70,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
   ipcMain.removeHandler('adb-connect')
   ipcMain.handle('adb-connect', async (_, { ip, port }) => {
     try {
-      const { stdout } = await execAsync(`adb connect ${ip}:${port}`)
+      const { stdout, stderr } = await execAsync(`${ADB} connect ${ip}:${port}`)
 
       if (
         stdout.toLowerCase().includes('connected to') ||
@@ -58,14 +80,14 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
 
         try {
           const { stdout: modelOut } = await execAsync(
-            `adb -s ${ip}:${port} shell getprop ro.product.model`
+            `${ADB} -s ${ip}:${port} shell getprop ro.product.model`
           )
           await saveDeviceToHistory(ip, port, modelOut.trim().toUpperCase() || 'UNKNOWN DEVICE')
         } catch (e) {}
 
         return { success: true }
       }
-      return { success: false, error: stdout }
+      return { success: false, error: stderr || stdout || 'ADB did not report a connection.' }
     } catch (e: any) {
       return { success: false, error: e.message }
     }
@@ -75,7 +97,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
   ipcMain.handle('adb-disconnect', async () => {
     if (!activeDevice) return { success: true }
     try {
-      await execAsync(`adb disconnect ${activeDevice.ip}:${activeDevice.port}`)
+      await execAsync(`${ADB} disconnect ${activeDevice.ip}:${activeDevice.port}`)
       activeDevice = null
       return { success: true }
     } catch (e: any) {
@@ -88,7 +110,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
     if (!activeDevice) return { success: false }
     return new Promise((resolve) => {
       exec(
-        `adb -s ${activeDevice.ip}:${activeDevice.port} exec-out screencap -p`,
+        `${ADB} -s ${activeDevice.ip}:${activeDevice.port} exec-out screencap -p`,
         { encoding: 'buffer', maxBuffer: 1024 * 1024 * 20 },
         (error, stdout) => {
           if (error) {
@@ -108,13 +130,15 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
     const target = `-s ${activeDevice.ip}:${activeDevice.port}`
     try {
       if (action === 'camera') {
-        await execAsync(`adb ${target} shell am start -a android.media.action.STILL_IMAGE_CAMERA`)
+        await execAsync(
+          `${ADB} ${target} shell am start -a android.media.action.STILL_IMAGE_CAMERA`
+        )
       } else if (action === 'wake') {
-        await execAsync(`adb ${target} shell input keyevent KEYCODE_WAKEUP`)
+        await execAsync(`${ADB} ${target} shell input keyevent KEYCODE_WAKEUP`)
       } else if (action === 'lock') {
-        await execAsync(`adb ${target} shell input keyevent KEYCODE_SLEEP`)
+        await execAsync(`${ADB} ${target} shell input keyevent KEYCODE_SLEEP`)
       } else if (action === 'home') {
-        await execAsync(`adb ${target} shell input keyevent KEYCODE_HOME`)
+        await execAsync(`${ADB} ${target} shell input keyevent KEYCODE_HOME`)
       }
       return { success: true }
     } catch (e: any) {
@@ -127,7 +151,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
     if (!activeDevice) return { success: false, error: 'No device connected' }
     const target = `-s ${activeDevice.ip}:${activeDevice.port}`
     try {
-      const { stdout: batteryOut } = await execAsync(`adb ${target} shell dumpsys battery`)
+      const { stdout: batteryOut } = await execAsync(`${ADB} ${target} shell dumpsys battery`)
       const levelMatch = batteryOut.match(/level: (\d+)/)
       const tempMatch = batteryOut.match(/temperature: (\d+)/)
       const isCharging =
@@ -136,7 +160,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
       const level = levelMatch ? parseInt(levelMatch[1]) : 0
       const temp = tempMatch ? (parseInt(tempMatch[1]) / 10).toFixed(1) : 0
 
-      const { stdout: storageOut } = await execAsync(`adb ${target} shell df -h /data`)
+      const { stdout: storageOut } = await execAsync(`${ADB} ${target} shell df -h /data`)
       const storageLines = storageOut.trim().split('\n')
       let storageUsed = '0',
         storageTotal = '0',
@@ -149,9 +173,11 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
         storagePercent = parseInt(parts[4].replace('%', '')) || 0
       }
 
-      const { stdout: modelOut } = await execAsync(`adb ${target} shell getprop ro.product.model`)
+      const { stdout: modelOut } = await execAsync(
+        `${ADB} ${target} shell getprop ro.product.model`
+      )
       const { stdout: osOut } = await execAsync(
-        `adb ${target} shell getprop ro.build.version.release`
+        `${ADB} ${target} shell getprop ro.build.version.release`
       )
 
       return {
@@ -173,9 +199,11 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
     if (!activeDevice) return 'Error: You are not currently connected to any mobile device.'
     try {
       const target = `-s ${activeDevice.ip}:${activeDevice.port}`
-      const { stdout: batOut } = await execAsync(`adb ${target} shell dumpsys battery`)
+      const { stdout: batOut } = await execAsync(`${ADB} ${target} shell dumpsys battery`)
       const level = batOut.match(/level: (\d+)/)?.[1] || 'Unknown'
-      const { stdout: modelOut } = await execAsync(`adb ${target} shell getprop ro.product.model`)
+      const { stdout: modelOut } = await execAsync(
+        `${ADB} ${target} shell getprop ro.product.model`
+      )
 
       return `I am currently linked to your ${modelOut.trim()}. The battery is at ${level}%.`
     } catch (e) {
@@ -191,12 +219,14 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
       const target = `-s ${activeDevice.ip}:${activeDevice.port}`
 
       if (packageName === 'android.media.action.STILL_IMAGE_CAMERA') {
-        await execAsync(`adb ${target} shell am start -a android.media.action.STILL_IMAGE_CAMERA`)
+        await execAsync(
+          `${ADB} ${target} shell am start -a android.media.action.STILL_IMAGE_CAMERA`
+        )
         return { success: true }
       }
 
       await execAsync(
-        `adb ${target} shell monkey -p ${packageName} -c android.intent.category.LAUNCHER 1`
+        `${ADB} ${target} shell monkey -p ${packageName} -c android.intent.category.LAUNCHER 1`
       )
       return { success: true }
     } catch (e: any) {
@@ -212,11 +242,11 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
       const target = `-s ${activeDevice.ip}:${activeDevice.port}`
 
       if (packageName === 'android.media.action.STILL_IMAGE_CAMERA') {
-        await execAsync(`adb ${target} shell am force-stop com.google.android.GoogleCamera`)
+        await execAsync(`${ADB} ${target} shell am force-stop com.google.android.GoogleCamera`)
         return { success: true }
       }
 
-      await execAsync(`adb ${target} shell am force-stop ${packageName}`)
+      await execAsync(`${ADB} ${target} shell am force-stop ${packageName}`)
       return { success: true }
     } catch (e: any) {
       return { success: false, error: e.message }
@@ -229,7 +259,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
     const target = `-s ${activeDevice.ip}:${activeDevice.port}`
 
     try {
-      const { stdout } = await execAsync(`adb ${target} shell wm size`)
+      const { stdout } = await execAsync(`${ADB} ${target} shell wm size`)
       const match = stdout.match(/(\d+)x(\d+)/)
 
       if (match) {
@@ -239,7 +269,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
         const x = Math.round((xPercent / 100) * width)
         const y = Math.round((yPercent / 100) * height)
 
-        await execAsync(`adb ${target} shell input tap ${x} ${y}`)
+        await execAsync(`${ADB} ${target} shell input tap ${x} ${y}`)
         return { success: true }
       }
       return { success: false, error: 'Could not calculate screen size.' }
@@ -254,7 +284,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
     const target = `-s ${activeDevice.ip}:${activeDevice.port}`
 
     try {
-      const { stdout } = await execAsync(`adb ${target} shell wm size`)
+      const { stdout } = await execAsync(`${ADB} ${target} shell wm size`)
       const match = stdout.match(/(\d+)x(\d+)/)
       if (!match) return { success: false }
 
@@ -274,7 +304,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
         cmd = `input swipe ${Math.round(w * 0.2)} ${cy} ${Math.round(w * 0.8)} ${cy} 300`
 
       if (cmd) {
-        await execAsync(`adb ${target} shell ${cmd}`)
+        await execAsync(`${ADB} ${target} shell ${cmd}`)
         return { success: true }
       }
       return { success: false, error: 'Invalid direction.' }
@@ -289,7 +319,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
     const target = `-s ${activeDevice.ip}:${activeDevice.port}`
 
     try {
-      const { stdout } = await execAsync(`adb ${target} shell dumpsys notification --noredact`)
+      const { stdout } = await execAsync(`${ADB} ${target} shell dumpsys notification --noredact`)
 
       const notifications: string[] = []
       const lines = stdout.split('\n')
@@ -331,7 +361,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
     if (!activeDevice) return { success: false, error: 'No phone connected.' }
     try {
       const target = `-s ${activeDevice.ip}:${activeDevice.port}`
-      await execAsync(`adb ${target} push "${sourcePath}" "${destPath}"`)
+      await execAsync(`${ADB} ${target} push "${sourcePath}" "${destPath}"`)
       return { success: true }
     } catch (e: any) {
       return { success: false, error: e.message }
@@ -346,7 +376,7 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
 
       const finalDest = destPath || path.join(app.getPath('downloads'))
 
-      await execAsync(`adb ${target} pull "${sourcePath}" "${finalDest}"`)
+      await execAsync(`${ADB} ${target} pull "${sourcePath}" "${finalDest}"`)
       return { success: true, savedTo: finalDest }
     } catch (e: any) {
       return { success: false, error: e.message }
@@ -364,19 +394,21 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
 
       if (cleanSetting === 'bluetooth' || cleanSetting === 'bt') {
         try {
-          await execAsync(`adb ${target} shell svc bluetooth ${action}`, { timeout: 5000 })
+          await execAsync(`${ADB} ${target} shell svc bluetooth ${action}`, { timeout: 5000 })
         } catch (e) {
-          await execAsync(`adb ${target} shell cmd bluetooth_manager ${action}`, { timeout: 5000 })
+          await execAsync(`${ADB} ${target} shell cmd bluetooth_manager ${action}`, {
+            timeout: 5000
+          })
         }
         return { success: true }
       }
 
       if (cleanSetting === 'wifi') {
         try {
-          await execAsync(`adb ${target} shell svc wifi ${action}`, { timeout: 5000 })
+          await execAsync(`${ADB} ${target} shell svc wifi ${action}`, { timeout: 5000 })
         } catch (e) {
           const wifiState = state ? 'enabled' : 'disabled'
-          await execAsync(`adb ${target} shell cmd wifi set-wifi-enabled ${wifiState}`, {
+          await execAsync(`${ADB} ${target} shell cmd wifi set-wifi-enabled ${wifiState}`, {
             timeout: 5000
           })
         }
@@ -384,12 +416,12 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
       }
 
       if (cleanSetting === 'data' || cleanSetting === 'mobile data') {
-        await execAsync(`adb ${target} shell svc data ${action}`, { timeout: 5000 })
+        await execAsync(`${ADB} ${target} shell svc data ${action}`, { timeout: 5000 })
         return { success: true }
       }
 
       if (cleanSetting === 'airplane' || cleanSetting === 'flight') {
-        await execAsync(`adb ${target} shell cmd connectivity airplane-mode ${action}`, {
+        await execAsync(`${ADB} ${target} shell cmd connectivity airplane-mode ${action}`, {
           timeout: 5000
         })
         return { success: true }
@@ -397,16 +429,16 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
 
       if (cleanSetting === 'location' || cleanSetting === 'gps') {
         const locState = state ? '3' : '0'
-        await execAsync(`adb ${target} shell settings put secure location_mode ${locState}`, {
+        await execAsync(`${ADB} ${target} shell settings put secure location_mode ${locState}`, {
           timeout: 5000
         })
         return { success: true }
       }
 
       if (cleanSetting === 'flashlight' || cleanSetting === 'torch') {
-        await execAsync(`adb ${target} shell input keyevent KEYCODE_WAKEUP`)
+        await execAsync(`${ADB} ${target} shell input keyevent KEYCODE_WAKEUP`)
 
-        await execAsync(`adb ${target} shell cmd statusbar expand-settings`)
+        await execAsync(`${ADB} ${target} shell cmd statusbar expand-settings`)
 
         return {
           success: true,

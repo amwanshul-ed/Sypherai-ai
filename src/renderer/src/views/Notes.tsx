@@ -140,7 +140,7 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
           {notes.length === 0 ? (
             <div className="text-center text-zinc-400 text-xs mt-10">
               <p>No memories saved.</p>
-              <p className="mt-2 opacity-50">Click + or ask IRIS.</p>
+              <p className="mt-2 opacity-50">Click + or ask SYPHER.</p>
             </div>
           ) : (
             notes.map((note) => (
