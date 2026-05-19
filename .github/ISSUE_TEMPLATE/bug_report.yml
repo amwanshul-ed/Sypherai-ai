@@ -1,0 +1,113 @@
+﻿name: Bug Report
+description: Report system defects, Electron crashes, IPC failures, and execution bugs.
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### ðŸš¨ Anomaly Detected
+        Thanks for filing this report. To help us patch the neural forge quickly, keep every answer concise, reproducible, and grounded in observed evidence. Include terminal logs or Electron console outputs whenever possible.
+  - type: dropdown
+    id: bug_type
+    attributes:
+      label: Bug type
+      description: Choose the category that best matches this anomaly.
+      options:
+        - Regression (Worked in a previous version, now fails)
+        - Crash (Electron app exits, white-screens, or hangs)
+        - Execution Failure (Tool triggers but fails to affect the OS)
+        - UI/React Bug (Visual glitches, state issues)
+    validations:
+      required: true
+  - type: dropdown
+    id: release_blocker
+    attributes:
+      label: Release blocker
+      description: Choose `Yes` only if this completely breaks core system functionality (e.g., app won't boot, keyboard injection freezes OS).
+      options:
+        - 'No'
+        - 'Yes'
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One-sentence statement of what is broken, based on observed evidence.
+      placeholder: 'Example: After upgrading to 1.2.0, Phantom Typer fails to inject text into VS Code and throws an IPC timeout.'
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Provide the shortest deterministic repro path supported by direct observation.
+      placeholder: |
+        1. Start SYPHER packaged .exe on Windows 11.
+        2. Focus on VS Code and press `Ctrl+Alt+Space`.
+        3. Speak command "Write a python script".
+        4. Observe no text injected and check Electron console for `ipcRenderer timeout`.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should the system have done?
+      placeholder: 'In version 1.1.0, the agent successfully typed the generated python script into the active window via nut.js.'
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Describe only the observed result, including user-visible errors and terminal output.
+      placeholder: "Nothing is typed. The floating widget hangs on 'Executing...', and the backend throws `nut.js execution context lost`."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: SYPHER version
+      description: Exact version/build tested (check your package.json or releases).
+      placeholder: '1.2.0'
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: OS and exact version where this occurs (Crucial for OS-level automation bugs).
+      placeholder: 'Windows 11 (23H2) / macOS 14.4 / Ubuntu 24.04'
+    validations:
+      required: true
+  - type: input
+    id: install_method
+    attributes:
+      label: Install method
+      description: How SYPHER was launched.
+      placeholder: 'npm run dev / Packaged Windows .exe / Docker Compose (Web Interface)'
+    validations:
+      required: true
+  - type: input
+    id: module
+    attributes:
+      label: Affected Module / Tool
+      description: Which part of the SYPHER system is failing?
+      placeholder: 'Phantom Typer / Local RAG (LanceDB) / ADB Mobile Link / Screen Peeler'
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, and evidence
+      description: Paste your Electron main process logs, React console errors, or attach screenshots. (Strip out any API keys before pasting!)
+      render: shell
+  - type: textarea
+    id: additional_information
+    attributes:
+      label: Additional information
+      description: Add any remaining context. If this is a regression, include the last known good version.
+      placeholder: 'Last known good version was 1.1.0. Temporary workaround is manually copying the text from the web interface.'

@@ -1,0 +1,69 @@
+﻿name: Feature Request
+description: Propose a new capability, module, or tool for the SYPHER Neural OS.
+title: '[Feature]: '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### ðŸ‘ï¸ Welcome to the Forge.
+        Help us evaluate this feature request by providing concrete use cases, architectural tradeoffs, and execution details.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A one-line statement of the requested capability.
+      placeholder: 'Example: Add local Llama 3 support via Ollama for offline fallback.'
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What user pain this solves and why the current behavior or toolset is insufficient.
+      placeholder: 'Example: Currently, SYPHER relies on cloud APIs for inference. If the user loses internet, the execution engine halts.'
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      description: Desired behavior, API changes, or UI/UX updates with as much technical specificity as possible.
+      placeholder: 'Example: Integrate Ollama into the Electron main process via a new IPC bridge channel, allowing the React frontend to toggle between Cloud and Local inference.'
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you considered and why they are weaker.
+      placeholder: 'Example: LM Studio API was considered, but Ollama is more lightweight for headless background execution.'
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: |
+        Explain who is affected, the severity/urgency, how often this pain occurs, and the practical consequences.
+        Include:
+        - Affected users/systems (e.g., Windows users, Dev workflow)
+        - Severity (Annoying, blocks workflow, nice-to-have)
+        - Frequency (Always, intermittent, edge case)
+      placeholder: |
+        Affected: Users with strict local-only privacy requirements.
+        Severity: High (Blocks adoption for enterprise devs).
+        Frequency: Constant.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence/examples
+      description: Prior art, links to similar tools, screenshots, logs, or metrics.
+      placeholder: "Example: Cursor's local model toggle UI, or a screenshot of the proposed Command Center integration."
+  - type: textarea
+    id: additional_information
+    attributes:
+      label: Additional information
+      description: Extra context, OS constraints (Windows/Mac/Linux specific?), or dependencies not covered above.
+      placeholder: 'This would require adding the ollama-node package to the backend dependencies.'

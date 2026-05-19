@@ -1,0 +1,61 @@
+﻿{
+  "app_name": "SYPHER AI",
+  "sections": [
+    {
+      "title": "ðŸš¨ BREAKING CHANGES",
+      "grep": "BREAKING"
+    },
+    {
+      "title": "âœ¨ Features",
+      "grep": "^feat"
+    },
+    {
+      "title": "ðŸ› Bug Fixes",
+      "grep": "^fix"
+    },
+    {
+      "title": "âš¡ Performance Improvements",
+      "grep": "^perf"
+    },
+    {
+      "title": "â™»ï¸ Refactoring",
+      "grep": "^refactor"
+    },
+    {
+      "title": "ðŸ› ï¸ Core & Build",
+      "grep": "^build|^ci|^chore"
+    },
+    {
+      "title": "ðŸ“š Documentation",
+      "grep": "^docs"
+    },
+    {
+      "title": "ðŸš¨ Security",
+      "grep": "^security"
+    },
+    {
+      "title": "ðŸ§ª Tests",
+      "grep": "^test"
+    },
+    {
+      "title": "ðŸŽ¨ Style",
+      "grep": "^style"
+    },
+    {
+      "title": "ðŸš€ Release",
+      "grep": "^release"
+    },
+    {
+      "title": "ðŸ”§ Miscellaneous",
+      "grep": "^misc"
+    },
+    {
+      "title": "âž• Additions",
+      "grep": "^add"
+    },
+    {
+      "title": "ðŸ”„ Changes",
+      "grep": "^change"
+    }
+  ]
+}
